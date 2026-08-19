@@ -170,11 +170,18 @@
             outline: none;
             flex: 1;
             min-width: 150px;
+            transition: 0.3s;
         }
 
         .admin-panel .form-row select:focus,
         .admin-panel .form-row input:focus {
             border-color: #2e86c1;
+            box-shadow: 0 0 8px rgba(46, 134, 193, 0.3);
+        }
+
+        .admin-panel .form-row input.changed {
+            border-color: #f39c12;
+            background: #fef9e7;
         }
 
         .admin-panel .form-row .update-btn {
@@ -204,6 +211,17 @@
 
         .admin-panel .form-row .clear-btn:hover {
             background: #c0392b;
+        }
+
+        .admin-panel .auto-save-indicator {
+            font-size: 12px;
+            color: #27ae60;
+            display: none;
+            margin-right: 10px;
+        }
+
+        .admin-panel .auto-save-indicator.show {
+            display: inline-block;
         }
 
         /* ===== تخته سیاه (جدول) ===== */
@@ -419,27 +437,33 @@
         <!-- ===== پنل مدیریت ===== -->
         <div class="admin-panel" id="adminPanel">
             <h3>👨‍⚕️ پنل مدیریت تخته سیاه</h3>
+            
             <div class="form-row">
                 <label>بخش:</label>
                 <select id="editDept">
                     <!-- توسط جاوااسکریپت پر می‌شود -->
                 </select>
+                <span class="auto-save-indicator" id="autoSaveIndicator">✅ ذخیره شد</span>
             </div>
+            
             <div class="form-row">
                 <label>داروساز تاییدکننده:</label>
-                <input type="text" id="editPharmacist" placeholder="نام داروساز را وارد کنید...">
+                <input type="text" id="editPharmacist" placeholder="نام داروساز را وارد کنید..." oninput="markChanged('editPharmacist')">
             </div>
+            
             <div class="form-row">
                 <label>تحویل‌دهنده:</label>
-                <input type="text" id="editDeliverer" placeholder="نام تحویل‌دهنده را وارد کنید...">
+                <input type="text" id="editDeliverer" placeholder="نام تحویل‌دهنده را وارد کنید..." oninput="markChanged('editDeliverer')">
             </div>
+            
             <div class="form-row">
                 <label>نکات:</label>
-                <input type="text" id="editNote" placeholder="نکات مربوط به بخش را وارد کنید...">
+                <input type="text" id="editNote" placeholder="نکات مربوط به بخش را وارد کنید..." oninput="markChanged('editNote')">
             </div>
+            
             <div class="form-row">
                 <label>وضعیت:</label>
-                <select id="editStatus">
+                <select id="editStatus" onchange="markChanged('editStatus')">
                     <option value="pending">⏳ در انتظار</option>
                     <option value="inprogress">⚙️ در حال انجام</option>
                     <option value="ready">✅ آماده تحویل</option>
@@ -447,12 +471,15 @@
                     <option value="delivered">📦 تحویل داده شد</option>
                 </select>
             </div>
+            
             <div class="form-row">
                 <button class="update-btn" onclick="updateBoard()">💾 بروزرسانی تخته</button>
                 <button class="clear-btn" onclick="clearRow()">🗑️ پاک کردن ردیف</button>
+                <button class="update-btn" onclick="saveCurrentRow()" style="background:#2980b9;">💿 ذخیره موقت</button>
             </div>
+            
             <div style="margin-top:10px; font-size:13px; color:#7f8c8d;">
-                💡 تغییرات شما در لحظه روی تخته نمایش داده می‌شود.
+                💡 تغییرات شما به‌صورت خودکار ذخیره می‌شود. برای اعمال روی تخته، "بروزرسانی تخته" را بزنید.
             </div>
             <div class="security-badge">
                 <span class="lock-icon">🔒</span> امنیت: رمز به صورت هش شده ذخیره می‌شود
@@ -489,7 +516,7 @@
     </div>
 
     <!-- ==========================================
-    JavaScript - کدهای اصلی
+    JavaScript - کدهای اصلی (به‌روز شده)
     ========================================== -->
     <script>
         // ============================================
@@ -502,6 +529,8 @@
         let loginAttempts = 0;
         let sessionTimer = null;
         let isLocked = false;
+        let currentDeptId = 1;
+        let autoSaveTimer = null;
 
         // ===== لیست بخش‌ها (۱۵ بخش) =====
         const departments = [
@@ -539,18 +568,15 @@
         // ============================================
 
         async function adminLogin() {
-            // بررسی قفل بودن
             if (isLocked) {
                 alert('🔒 به دلیل تلاش‌های ناموفق، ورود موقتاً قفل شده است. لطفاً چند دقیقه بعد تلاش کنید.');
                 return;
             }
 
-            // بررسی تعداد تلاش‌های ناموفق
             if (loginAttempts >= CONFIG.MAX_LOGIN_ATTEMPTS) {
                 isLocked = true;
                 alert(`🔒 به دلیل ${CONFIG.MAX_LOGIN_ATTEMPTS} بار تلاش ناموفق، ورود به مدت ${CONFIG.LOCKOUT_DURATION} دقیقه قفل شد!`);
                 
-                // باز کردن قفل بعد از مدت زمان مشخص
                 setTimeout(() => {
                     isLocked = false;
                     loginAttempts = 0;
@@ -573,17 +599,13 @@
                 return;
             }
 
-            // هش کردن رمز وارد شده
             const hashedInput = await hashPassword(pass);
             
-            // مقایسه با هش ذخیره شده در config.js
             if (hashedInput === CONFIG.ADMIN_PASSWORD_HASH) {
-                // موفقیت
                 isAdmin = true;
                 adminName = name.trim();
                 loginAttempts = 0;
                 
-                // نمایش پنل مدیریت
                 document.getElementById('adminPanel').style.display = 'block';
                 document.getElementById('userStatus').textContent = '👨‍⚕️ مدیر داروخانه';
                 document.getElementById('adminNameDisplay').textContent = adminName;
@@ -591,21 +613,14 @@
                 document.getElementById('logoutBtn').style.display = 'inline-block';
                 document.getElementById('logsBtn').style.display = 'inline-block';
                 
-                // شروع تایمر نشست
                 startSessionTimer();
-                
-                // ثبت لاگ ورود موفق
                 logAccess('✅ ورود موفق', adminName);
-                
                 renderBoard();
                 alert(`✅ به پنل مدیریت خوش آمدید آقا/خانم ${adminName}!`);
             } else {
-                // ناموفق
                 loginAttempts++;
                 const remaining = CONFIG.MAX_LOGIN_ATTEMPTS - loginAttempts;
                 alert(`❌ رمز اشتباه است! ${remaining} تلاش باقی مانده.`);
-                
-                // ثبت لاگ ورود ناموفق
                 logAccess('❌ ورود ناموفق', name || 'ناشناس');
             }
         }
@@ -626,7 +641,6 @@
             
             clearTimeout(sessionTimer);
             renderBoard();
-            
             logAccess('🚪 خروج', adminName || 'کاربر');
             alert('🚪 از پنل مدیریت خارج شدید');
         }
@@ -664,7 +678,6 @@
                 action: action,
                 user: username || 'ناشناس'
             });
-            // فقط ۱۰۰ لاگ آخر رو نگه دار
             if (logs.length > 100) logs.shift();
             localStorage.setItem('loginLogs', JSON.stringify(logs));
         }
@@ -774,35 +787,36 @@
                 select.appendChild(option);
             });
             select.value = 1;
+            currentDeptId = 1;
             loadRowData(1);
         }
 
-        // ===== بارگذاری داده‌های یک ردیف در پنل =====
-        function loadRowData(deptId) {
-            const row = boardData.find(r => r.deptId == deptId);
-            if (row) {
-                document.getElementById('editPharmacist').value = row.pharmacist || '';
-                document.getElementById('editDeliverer').value = row.deliverer || '';
-                document.getElementById('editNote').value = row.note || '';
-                document.getElementById('editStatus').value = row.status || 'pending';
+        // ============================================
+        // ذخیره‌سازی خودکار هنگام تایپ (جدید!)
+        // ============================================
+
+        function markChanged(fieldId) {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.classList.add('changed');
             }
+            
+            // نمایش indicator ذخیره‌سازی
+            const indicator = document.getElementById('autoSaveIndicator');
+            indicator.textContent = '⏳ در حال ذخیره...';
+            indicator.className = 'auto-save-indicator show';
+            
+            // تاخیر برای ذخیره خودکار (هر ۱ ثانیه بعد از آخرین تایپ)
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(() => {
+                autoSaveCurrentRow();
+            }, 1000);
         }
 
-        // ===== انتخاب بخش در پنل =====
-        document.addEventListener('DOMContentLoaded', function() {
-            const select = document.getElementById('editDept');
-            select.addEventListener('change', function() {
-                loadRowData(this.value);
-            });
-        });
-
-        // ===== بروزرسانی تخته =====
-        function updateBoard() {
-            if (!isAdmin) {
-                alert('⚠️ فقط مدیر داروخانه می‌تواند تخته را بروزرسانی کند!');
-                return;
-            }
-
+        // ===== ذخیره خودکار ردیف فعلی =====
+        function autoSaveCurrentRow() {
+            if (!isAdmin) return;
+            
             const deptId = parseInt(document.getElementById('editDept').value);
             const pharmacist = document.getElementById('editPharmacist').value.trim();
             const deliverer = document.getElementById('editDeliverer').value.trim();
@@ -817,14 +831,87 @@
                 row.status = status;
                 saveData();
                 renderBoard();
-                document.getElementById('adminNameDisplay').textContent = adminName || 'مدیر';
                 
-                logAccess('✏️ بروزرسانی تخته', adminName);
-                alert('✅ تخته با موفقیت بروزرسانی شد!');
+                // نمایش indicator ذخیره شد
+                const indicator = document.getElementById('autoSaveIndicator');
+                indicator.textContent = '✅ ذخیره شد';
+                indicator.className = 'auto-save-indicator show';
+                
+                // پاک کردن کلاس changed از فیلدها
+                document.querySelectorAll('.changed').forEach(el => {
+                    el.classList.remove('changed');
+                });
+                
+                // مخفی کردن indicator بعد از ۲ ثانیه
+                setTimeout(() => {
+                    indicator.className = 'auto-save-indicator';
+                }, 2000);
                 
                 // ریست تایمر نشست
                 startSessionTimer();
             }
+        }
+
+        // ===== ذخیره دستی ردیف فعلی =====
+        function saveCurrentRow() {
+            if (!isAdmin) {
+                alert('⚠️ فقط مدیر می‌تواند ذخیره کند!');
+                return;
+            }
+            autoSaveCurrentRow();
+            alert('💾 اطلاعات بخش ذخیره شد!');
+        }
+
+        // ===== بارگذاری داده‌های یک ردیف در پنل =====
+        function loadRowData(deptId) {
+            // ابتدا ذخیره خودکار ردیف قبلی
+            if (isAdmin) {
+                autoSaveCurrentRow();
+            }
+            
+            const row = boardData.find(r => r.deptId == deptId);
+            if (row) {
+                document.getElementById('editPharmacist').value = row.pharmacist || '';
+                document.getElementById('editDeliverer').value = row.deliverer || '';
+                document.getElementById('editNote').value = row.note || '';
+                document.getElementById('editStatus').value = row.status || 'pending';
+                currentDeptId = deptId;
+                
+                // پاک کردن کلاس changed
+                document.querySelectorAll('.changed').forEach(el => {
+                    el.classList.remove('changed');
+                });
+                
+                // مخفی کردن indicator
+                document.getElementById('autoSaveIndicator').className = 'auto-save-indicator';
+            }
+        }
+
+        // ===== انتخاب بخش در پنل =====
+        document.addEventListener('DOMContentLoaded', function() {
+            const select = document.getElementById('editDept');
+            select.addEventListener('change', function() {
+                loadRowData(this.value);
+            });
+        });
+
+        // ===== بروزرسانی تخته (اعمال روی جدول اصلی) =====
+        function updateBoard() {
+            if (!isAdmin) {
+                alert('⚠️ فقط مدیر داروخانه می‌تواند تخته را بروزرسانی کند!');
+                return;
+            }
+
+            // اول ذخیره خودکار
+            autoSaveCurrentRow();
+            
+            // بروزرسانی نمایش
+            renderBoard();
+            document.getElementById('adminNameDisplay').textContent = adminName || 'مدیر';
+            
+            logAccess('✏️ بروزرسانی تخته', adminName);
+            alert('✅ تخته با موفقیت بروزرسانی شد!');
+            startSessionTimer();
         }
 
         // ===== پاک کردن ردیف =====
@@ -848,7 +935,6 @@
                 loadRowData(deptId);
                 logAccess('🗑️ پاک کردن ردیف', adminName);
                 alert('🗑️ ردیف پاک شد!');
-                
                 startSessionTimer();
             }
         }
