@@ -177,6 +177,105 @@
         }
 
         /* ==========================================
+           پنجره مودال ورود
+           ========================================== */
+        .login-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(26, 42, 58, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .login-modal-content {
+            background: white;
+            padding: 35px;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+            border-top: 5px solid #f1c40f;
+            direction: rtl;
+        }
+
+        .login-modal-content h3 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 20px;
+        }
+
+        .login-modal-content .input-group {
+            margin-bottom: 18px;
+        }
+
+        .login-modal-content .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .login-modal-content .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e2e6ea;
+            border-radius: 14px;
+            font-family: 'Vazirmatn', sans-serif;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .login-modal-content .input-group input:focus {
+            border-color: #2c3e50;
+            box-shadow: 0 0 0 4px rgba(44, 62, 80, 0.08);
+        }
+
+        .login-modal-content .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        .login-modal-content .modal-actions button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 14px;
+            border: none;
+            font-family: 'Vazirmatn', sans-serif;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .login-modal-content .submit-btn {
+            background: #2c3e50;
+            color: white;
+        }
+
+        .login-modal-content .submit-btn:hover {
+            background: #1a2a3a;
+            transform: translateY(-2px);
+        }
+
+        .login-modal-content .cancel-btn {
+            background: #f1f2f6;
+            color: #e74c3c;
+        }
+
+        .login-modal-content .cancel-btn:hover {
+            background: #e2e6ea;
+            transform: translateY(-2px);
+        }
+
+        /* ==========================================
            کارت ارسال پیام (فقط برای کاربران عادی)
            ========================================== */
         .message-section {
@@ -869,6 +968,10 @@
                 bottom: 15px;
                 padding: 14px 18px;
             }
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
         }
 
         @media (max-width: 480px) {
@@ -918,6 +1021,29 @@
     </style>
 </head>
 <body>
+
+    <!-- ===== پنجره مودال ورود مدیر ===== -->
+    <div class="login-modal-overlay" id="loginModal">
+        <div class="login-modal-content">
+            <h3><i class="fas fa-user-lock"></i> ورود به پنل مدیریت</h3>
+            
+            <div class="input-group">
+                <label>نام کاربری:</label>
+                <input type="text" id="modalUsername" placeholder="نام مدیر را وارد کنید...">
+            </div>
+            
+            <div class="input-group">
+                <label>رمز عبور:</label>
+                <!-- این نوع فیلد باعث ستاره‌ای شدن رمز می‌شود -->
+                <input type="password" id="modalPassword" placeholder="رمز عبور را وارد کنید..." onkeypress="if(event.key==='Enter') submitLogin()">
+            </div>
+            
+            <div class="modal-actions">
+                <button class="cancel-btn" onclick="closeLoginModal()"><i class="fas fa-times"></i> انصراف</button>
+                <button class="submit-btn" onclick="submitLogin()"><i class="fas fa-sign-in-alt"></i> ورود</button>
+            </div>
+        </div>
+    </div>
 
     <!-- ===== نوتیفیکیشن ===== -->
     <div class="notification-toast" id="notificationToast">
@@ -1342,37 +1468,49 @@
         }
 
         // ============================================
-        // لاگین مدیر با قابلیت ماندگاری
+        // لاگین مدیر با پنجره مودال
         // ============================================
 
-        async function adminLogin() {
+        // نمایش مودال ورود به جای prompt
+        function adminLogin() {
             if (isLocked) {
                 alert('🔒 به دلیل تلاش‌های ناموفق، ورود موقتاً قفل شده است.');
                 return;
             }
 
             if (loginAttempts >= CONFIG.MAX_LOGIN_ATTEMPTS) {
-                isLocked = true;
-                alert(`🔒 به دلیل ${CONFIG.MAX_LOGIN_ATTEMPTS} بار تلاش ناموفق، ورود به مدت ${CONFIG.LOCKOUT_DURATION} دقیقه قفل شد!`);
-                setTimeout(() => {
-                    isLocked = false;
-                    loginAttempts = 0;
-                    alert('🔓 قفل ورود باز شد.');
-                }, CONFIG.LOCKOUT_DURATION * 60 * 1000);
+                lockSystem();
                 return;
             }
 
-            const name = prompt('👨‍⚕️ نام مدیر داروخانه را وارد کنید:');
-            if (!name || name.trim() === '') {
+            // باز کردن فرم ورود
+            document.getElementById('loginModal').style.display = 'flex';
+            document.getElementById('modalUsername').value = '';
+            document.getElementById('modalPassword').value = '';
+            document.getElementById('modalUsername').focus();
+        }
+
+        // بستن مودال ورود
+        function closeLoginModal() {
+            document.getElementById('loginModal').style.display = 'none';
+        }
+
+        // بررسی اطلاعات وارد شده در مودال
+        async function submitLogin() {
+            const name = document.getElementById('modalUsername').value.trim();
+            const pass = document.getElementById('modalPassword').value.trim();
+
+            if (!name) {
                 loginAttempts++;
+                alert('❌ نام کاربری نمی‌تواند خالی باشد!');
                 return;
             }
 
-            const pass = prompt('🔑 رمز مدیر را وارد کنید:');
-            if (!pass || pass.trim() === '') {
+            if (!pass) {
                 loginAttempts++;
                 const remaining = CONFIG.MAX_LOGIN_ATTEMPTS - loginAttempts;
                 alert(`❌ رمز نمی‌تواند خالی باشد! ${remaining} تلاش باقی مانده.`);
+                checkLockout();
                 return;
             }
 
@@ -1380,7 +1518,7 @@
             
             if (hashedInput === CONFIG.ADMIN_PASSWORD_HASH) {
                 isAdmin = true;
-                adminName = name.trim();
+                adminName = name;
                 loginAttempts = 0;
                 
                 saveLoginState();
@@ -1389,13 +1527,36 @@
                 logAccess('✅ ورود موفق', adminName);
                 renderBoard();
                 await renderMessages();
+                
+                closeLoginModal(); // بستن پنجره پس از ورود موفق
                 alert(`✅ به پنل مدیریت خوش آمدید آقا/خانم ${adminName}!`);
             } else {
                 loginAttempts++;
                 const remaining = CONFIG.MAX_LOGIN_ATTEMPTS - loginAttempts;
-                alert(`❌ رمز اشتباه است! ${remaining} تلاش باقی مانده.`);
                 logAccess('❌ ورود ناموفق', name || 'ناشناس');
+                
+                alert(`❌ رمز اشتباه است! ${remaining} تلاش باقی مانده.`);
+                document.getElementById('modalPassword').value = ''; // پاک کردن رمز اشتباه
+                checkLockout();
             }
+        }
+
+        // تابع کمکی برای قفل کردن سیستم در صورت تلاش زیاد
+        function checkLockout() {
+            if (loginAttempts >= CONFIG.MAX_LOGIN_ATTEMPTS) {
+                closeLoginModal();
+                lockSystem();
+            }
+        }
+
+        function lockSystem() {
+            isLocked = true;
+            alert(`🔒 به دلیل ${CONFIG.MAX_LOGIN_ATTEMPTS} بار تلاش ناموفق، ورود به مدت ${CONFIG.LOCKOUT_DURATION} دقیقه قفل شد!`);
+            setTimeout(() => {
+                isLocked = false;
+                loginAttempts = 0;
+                alert('🔓 قفل ورود باز شد.');
+            }, CONFIG.LOCKOUT_DURATION * 60 * 1000);
         }
 
         function adminLogout() {
