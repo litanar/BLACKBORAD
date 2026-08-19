@@ -29,9 +29,6 @@
             direction: rtl;
         }
 
-        /* ==========================================
-           CONTAINER
-           ========================================== */
         .container {
             max-width: 1440px;
             margin: 0 auto;
@@ -121,10 +118,6 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .header .admin-actions .status-badge .fa {
-            margin-left: 6px;
-        }
-
         .header .admin-actions .login-btn {
             background: #f1c40f;
             color: #1a2a3a;
@@ -206,11 +199,6 @@
             gap: 10px;
         }
 
-        .message-section h3 .fa {
-            color: #2c3e50;
-            font-size: 22px;
-        }
-
         .message-section .message-row {
             display: flex;
             gap: 12px;
@@ -275,10 +263,6 @@
             display: none;
         }
 
-        .message-section .message-row .success-msg .fa {
-            margin-left: 6px;
-        }
-
         /* ==========================================
            پنل پیام‌ها (مدیر)
            ========================================== */
@@ -309,10 +293,16 @@
             border-radius: 30px;
             font-size: 13px;
             font-weight: 700;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
         }
 
         .messages-panel .msg-list {
-            max-height: 250px;
+            max-height: 300px;
             overflow-y: auto;
         }
 
@@ -353,6 +343,12 @@
         .messages-panel .msg-item.unread {
             border-right-color: #e74c3c;
             background: #fef9f7;
+            animation: flashNew 1s ease-in-out;
+        }
+
+        @keyframes flashNew {
+            0%, 100% { background: #fef9f7; }
+            50% { background: #fde8e6; }
         }
 
         .messages-panel .msg-item .msg-dept {
@@ -370,6 +366,7 @@
             font-size: 9px;
             padding: 1px 8px;
             border-radius: 30px;
+            animation: pulse 1.5s infinite;
         }
 
         .messages-panel .msg-item .msg-text {
@@ -723,6 +720,52 @@
         }
 
         /* ==========================================
+           نوتیفیکیشن پیام جدید
+           ========================================== */
+        .notification-toast {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            background: #2c3e50;
+            color: white;
+            padding: 16px 24px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            display: none;
+            align-items: center;
+            gap: 12px;
+            z-index: 1000;
+            font-family: 'Vazirmatn', sans-serif;
+            animation: slideUp 0.5s ease-out;
+            border-right: 5px solid #f1c40f;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .notification-toast .fa {
+            font-size: 24px;
+            color: #f1c40f;
+        }
+
+        .notification-toast .notif-text {
+            font-size: 14px;
+        }
+
+        .notification-toast .notif-dept {
+            font-weight: 700;
+            color: #f1c40f;
+        }
+
+        /* ==========================================
            RESPONSIVE
            ========================================== */
         @media (max-width: 992px) {
@@ -812,6 +855,12 @@
                 width: 100%;
                 text-align: center;
             }
+            .notification-toast {
+                left: 15px;
+                right: 15px;
+                bottom: 15px;
+                padding: 14px 18px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -858,25 +907,18 @@
         .container {
             animation: fadeInUp 0.6s ease-out;
         }
-
-        .message-section {
-            animation: fadeInUp 0.7s ease-out;
-        }
-
-        .board-section {
-            animation: fadeInUp 0.8s ease-out;
-        }
-
-        .admin-panel {
-            animation: fadeInUp 0.5s ease-out;
-        }
-
-        .messages-panel {
-            animation: fadeInUp 0.5s ease-out;
-        }
     </style>
 </head>
 <body>
+
+    <!-- ===== نوتیفیکیشن ===== -->
+    <div class="notification-toast" id="notificationToast">
+        <i class="fas fa-bell"></i>
+        <div>
+            <div class="notif-text">پیام جدید از <span class="notif-dept" id="notifDept">بخش</span></div>
+            <div style="font-size:12px; opacity:0.7;" id="notifText">متن پیام</div>
+        </div>
+    </div>
 
     <div class="container">
         <!-- ===== HEADER ===== -->
@@ -1027,7 +1069,7 @@
     </div>
 
     <!-- ==========================================
-    JAVASCRIPT
+    JAVASCRIPT - نسخه نهایی با رفع مشکلات
     ========================================== -->
     <script>
         // ============================================
@@ -1043,6 +1085,7 @@
         let isLocked = false;
         let currentDeptId = 1;
         let autoSaveTimer = null;
+        let previousMsgCount = 0;
 
         const departments = [
             { id: 1, name: 'اورژانس', icon: '🚑' },
@@ -1075,13 +1118,61 @@
         }
 
         // ============================================
-        // مدیریت پیام‌ها
+        // مدیریت لاگین با ذخیره در localStorage
+        // ============================================
+
+        function saveLoginState() {
+            if (isAdmin) {
+                localStorage.setItem('isAdmin', 'true');
+                localStorage.setItem('adminName', adminName);
+                localStorage.setItem('loginTime', Date.now().toString());
+            } else {
+                localStorage.removeItem('isAdmin');
+                localStorage.removeItem('adminName');
+                localStorage.removeItem('loginTime');
+            }
+        }
+
+        function restoreLoginState() {
+            const saved = localStorage.getItem('isAdmin');
+            const savedName = localStorage.getItem('adminName');
+            const loginTime = localStorage.getItem('loginTime');
+            
+            if (saved === 'true' && savedName) {
+                // بررسی زمان لاگین (حداکثر ۸ ساعت)
+                if (loginTime) {
+                    const elapsed = Date.now() - parseInt(loginTime);
+                    if (elapsed < 8 * 60 * 60 * 1000) { // ۸ ساعت
+                        isAdmin = true;
+                        adminName = savedName;
+                        return true;
+                    } else {
+                        // منقضی شده
+                        localStorage.removeItem('isAdmin');
+                        localStorage.removeItem('adminName');
+                        localStorage.removeItem('loginTime');
+                    }
+                }
+            }
+            return false;
+        }
+
+        // ============================================
+        // مدیریت پیام‌ها با نوتیفیکیشن
         // ============================================
 
         function loadMessages() {
             const saved = localStorage.getItem('departmentMessages');
             if (saved) {
-                messages = JSON.parse(saved);
+                const newMessages = JSON.parse(saved);
+                const oldCount = messages.length;
+                messages = newMessages;
+                
+                // بررسی پیام جدید
+                if (isAdmin && newMessages.length > oldCount) {
+                    const newMsg = newMessages[newMessages.length - 1];
+                    showNotification(newMsg.dept, newMsg.text);
+                }
             } else {
                 messages = [];
             }
@@ -1091,6 +1182,23 @@
         function saveMessages() {
             localStorage.setItem('departmentMessages', JSON.stringify(messages));
             renderMessages();
+        }
+
+        function showNotification(dept, text) {
+            const toast = document.getElementById('notificationToast');
+            document.getElementById('notifDept').textContent = dept;
+            document.getElementById('notifText').textContent = text;
+            toast.style.display = 'flex';
+            
+            // پخش صدا (اختیاری)
+            try {
+                const audio = new Audio('data:audio/wav;base64,UklGRnoAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoAAACBhYqFhYWFiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg=');
+                audio.play().catch(() => {});
+            } catch(e) {}
+            
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 5000);
         }
 
         function sendMessage() {
@@ -1136,6 +1244,7 @@
             }
 
             const sorted = [...messages].reverse();
+            const unreadCount = messages.filter(m => !m.isRead).length;
             
             let html = '';
             sorted.forEach(msg => {
@@ -1152,12 +1261,20 @@
             });
 
             list.innerHTML = html;
-            count.textContent = messages.length;
+            count.textContent = unreadCount > 0 ? `${unreadCount} جدید` : messages.length;
             
-            // علامت‌گذاری به عنوان خوانده شده
+            // اگر مدیر هست، پیام‌ها را خوانده شده علامت بزن
             if (isAdmin) {
-                messages.forEach(msg => { msg.isRead = true; });
-                saveMessages();
+                let changed = false;
+                messages.forEach(msg => {
+                    if (!msg.isRead) {
+                        msg.isRead = true;
+                        changed = true;
+                    }
+                });
+                if (changed) {
+                    localStorage.setItem('departmentMessages', JSON.stringify(messages));
+                }
             }
         }
 
@@ -1174,7 +1291,7 @@
         }
 
         // ============================================
-        // لاگین مدیر
+        // لاگین مدیر با قابلیت ماندگاری
         // ============================================
 
         async function adminLogin() {
@@ -1215,14 +1332,10 @@
                 adminName = name.trim();
                 loginAttempts = 0;
                 
-                document.getElementById('adminPanel').style.display = 'block';
-                document.getElementById('messagesPanel').style.display = 'block';
-                document.getElementById('userStatus').innerHTML = '<i class="fas fa-crown" style="color:#f1c40f;"></i> مدیر داروخانه';
-                document.getElementById('adminNameDisplay').textContent = adminName;
-                document.getElementById('loginBtn').style.display = 'none';
-                document.getElementById('logoutBtn').style.display = 'inline-block';
-                document.getElementById('logsBtn').style.display = 'inline-block';
+                // ذخیره وضعیت لاگین
+                saveLoginState();
                 
+                showAdminPanel(true);
                 startSessionTimer();
                 logAccess('✅ ورود موفق', adminName);
                 renderBoard();
@@ -1239,19 +1352,38 @@
         function adminLogout() {
             isAdmin = false;
             adminName = '';
-            document.getElementById('adminPanel').style.display = 'none';
-            document.getElementById('messagesPanel').style.display = 'none';
-            document.getElementById('userStatus').innerHTML = '<i class="fas fa-user"></i> کاربر عادی';
-            document.getElementById('adminNameDisplay').textContent = '─';
-            document.getElementById('loginBtn').style.display = 'inline-block';
-            document.getElementById('logoutBtn').style.display = 'none';
-            document.getElementById('logsBtn').style.display = 'none';
             
+            // پاک کردن وضعیت لاگین
+            localStorage.removeItem('isAdmin');
+            localStorage.removeItem('adminName');
+            localStorage.removeItem('loginTime');
+            
+            showAdminPanel(false);
             clearTimeout(sessionTimer);
             renderBoard();
             renderMessages();
             logAccess('🚪 خروج', adminName || 'کاربر');
             alert('🚪 از پنل مدیریت خارج شدید');
+        }
+
+        function showAdminPanel(show) {
+            if (show) {
+                document.getElementById('adminPanel').style.display = 'block';
+                document.getElementById('messagesPanel').style.display = 'block';
+                document.getElementById('userStatus').innerHTML = '<i class="fas fa-crown" style="color:#f1c40f;"></i> مدیر داروخانه';
+                document.getElementById('adminNameDisplay').textContent = adminName;
+                document.getElementById('loginBtn').style.display = 'none';
+                document.getElementById('logoutBtn').style.display = 'inline-block';
+                document.getElementById('logsBtn').style.display = 'inline-block';
+            } else {
+                document.getElementById('adminPanel').style.display = 'none';
+                document.getElementById('messagesPanel').style.display = 'none';
+                document.getElementById('userStatus').innerHTML = '<i class="fas fa-user"></i> کاربر عادی';
+                document.getElementById('adminNameDisplay').textContent = '─';
+                document.getElementById('loginBtn').style.display = 'inline-block';
+                document.getElementById('logoutBtn').style.display = 'none';
+                document.getElementById('logsBtn').style.display = 'none';
+            }
         }
 
         function startSessionTimer() {
@@ -1570,34 +1702,33 @@
         }
 
         // ============================================
-        // بارگذاری اولیه
+        // بارگذاری اولیه + بازیابی لاگین
         // ============================================
 
-        loadData();
-        loadMessages();
-        renderBoard();
-
-        setInterval(() => {
+        function init() {
             loadData();
             loadMessages();
             renderBoard();
-        }, 5000);
+            
+            // بازیابی وضعیت لاگین
+            if (restoreLoginState()) {
+                showAdminPanel(true);
+                startSessionTimer();
+                renderMessages();
+                renderBoard();
+                logAccess('🔄 بازیابی نشست', adminName);
+            }
+            
+            // شروع نظارت بر پیام‌ها هر ۲ ثانیه
+            setInterval(() => {
+                loadMessages();
+                if (isAdmin) {
+                    renderBoard();
+                }
+            }, 2000);
+        }
 
-        window.onload = function() {
-            isAdmin = false;
-            loginAttempts = 0;
-            isLocked = false;
-            document.getElementById('adminPanel').style.display = 'none';
-            document.getElementById('messagesPanel').style.display = 'none';
-            document.getElementById('userStatus').innerHTML = '<i class="fas fa-user"></i> کاربر عادی';
-            document.getElementById('adminNameDisplay').textContent = '─';
-            document.getElementById('loginBtn').style.display = 'inline-block';
-            document.getElementById('logoutBtn').style.display = 'none';
-            document.getElementById('logsBtn').style.display = 'none';
-            loadData();
-            loadMessages();
-            renderBoard();
-        };
+        init();
     </script>
 
 </body>
