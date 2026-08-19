@@ -12,3 +12,11 @@ const CONFIG = {
     MAX_LOGIN_ATTEMPTS: 5, // حداکثر تلاش برای ورود
     LOCKOUT_DURATION: 5 // دقیقه قفل شدن بعد از تلاش‌های ناموفق
 };
+
+ // ===== تنظیمات JSONBin =====
+    // کلید API که از JSONBin گرفتی
+    JSONBIN_API_KEY: '$2a$10$bN6wkKKFfqCeLhrQAox/4.DsQXZW2Auy/bo5zphM8lR6B2Cz2ntQy ',
+    
+    // شناسه Bin که از JSONBin گرفتی
+    JSONBIN_BIN_ID: '6a860bd6da38895dfef883b2'
+};
