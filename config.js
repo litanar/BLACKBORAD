@@ -10,10 +10,9 @@ const CONFIG = {
     ADMIN_TITLE: 'مدیر داروخانه',
     SESSION_TIMEOUT: 30, // دقیقه - بعد از این مدت بی‌حرکتی، خارج می‌شود
     MAX_LOGIN_ATTEMPTS: 5, // حداکثر تلاش برای ورود
-    LOCKOUT_DURATION: 5 // دقیقه قفل شدن بعد از تلاش‌های ناموفق
-};
+    LOCKOUT_DURATION: 5, // دقیقه قفل شدن بعد از تلاش‌های ناموفق
 
- // ===== تنظیمات JSONBin =====
+    // ===== تنظیمات JSONBin =====
     // کلید API که از JSONBin گرفتی
     JSONBIN_API_KEY: '$2a$10$KMz.raZb1kA3iGwSTC370e8BkdKgVMsu.ACaMaQdbQc83.ulLPqcu',
     
