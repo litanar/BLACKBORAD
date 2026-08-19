@@ -9,6 +9,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     
+    <!-- ===== اسکریپت‌های فایربیس (نسخه Compat برای جاوااسکریپت خالص) ===== -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
     <script src="config.js"></script>
     
     <style>
@@ -1073,7 +1077,7 @@
     </div>
 
     <!-- ==========================================
-    JAVASCRIPT - نسخه نهایی
+    JAVASCRIPT - نسخه نهایی با Firebase
     ========================================== -->
     <script>
         // ============================================
@@ -1109,26 +1113,17 @@
         ];
 
         // ============================================
-        // توابع ارتباط با JSONBin (جایگزین localStorage)
+        // راه‌اندازی فایربیس
         // ============================================
+        
+        // مقداردهی اولیه برنامه با کانفیگ موجود در config.js
+        firebase.initializeApp(CONFIG.firebaseConfig);
+        const database = firebase.database();
+        const dbRef = database.ref('pharmacyBoard');
 
-        async function loadFromServer() {
-            try {
-                const response = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.JSONBIN_BIN_ID}/latest`, {
-                    method: 'GET',
-                    headers: {
-                        'X-Master-Key': CONFIG.JSONBIN_API_KEY
-                    }
-                });
-                if(response.ok) {
-                    const data = await response.json();
-                    return data.record;
-                }
-            } catch (error) {
-                console.error("خطا در دریافت اطلاعات از سرور:", error);
-            }
-            return null;
-        }
+        // ============================================
+        // توابع ارتباط با فایربیس
+        // ============================================
 
         function updateLastTimeDisplay() {
             const now = new Date();
@@ -1140,21 +1135,37 @@
 
         async function updateServer() {
             try {
-                await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.JSONBIN_BIN_ID}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': CONFIG.JSONBIN_API_KEY
-                    },
-                    body: JSON.stringify({
-                        boardData: boardData,
-                        messages: messages
-                    })
+                await dbRef.set({
+                    boardData: boardData,
+                    messages: messages
                 });
                 updateLastTimeDisplay();
             } catch (error) {
                 console.error("خطا در ارسال اطلاعات به سرور:", error);
             }
+        }
+
+        function generateDefaultBoard() {
+            let defaultBoard = departments.map(dept => ({
+                deptId: dept.id,
+                deptName: dept.name,
+                pharmacist: '',
+                deliverer: '',
+                note: '',
+                status: 'pending'
+            }));
+            
+            // داده های پیش‌فرض نمایشی
+            defaultBoard[0].pharmacist = 'دکتر رضایی';
+            defaultBoard[0].deliverer = 'علی محمدی';
+            defaultBoard[0].note = 'آتروپین تموم شد';
+            defaultBoard[0].status = 'ready';
+            defaultBoard[1].pharmacist = 'دکتر کریمی';
+            defaultBoard[1].deliverer = 'حسن حسینی';
+            defaultBoard[1].note = 'نیاز به آمپی‌سیلین';
+            defaultBoard[1].status = 'inprogress';
+            
+            return defaultBoard;
         }
 
         // ============================================
@@ -1272,7 +1283,6 @@
 
             // ارسال پیام به سرور به صورت آنلاین
             await updateServer();
-            await renderMessages();
         }
 
         async function renderMessages() {
@@ -1328,7 +1338,6 @@
             
             messages = messages.filter(msg => msg.id !== id);
             await updateServer();
-            await renderMessages();
             logAccess('🗑️ حذف پیام', adminName);
         }
 
@@ -1552,7 +1561,6 @@
                 row.status = status;
                 
                 await updateServer();
-                renderBoard();
                 
                 const indicator = document.getElementById('autoSaveIndicator');
                 indicator.innerHTML = '<i class="fas fa-check-circle"></i> ذخیره شد';
@@ -1616,7 +1624,6 @@
             }
 
             await autoSaveCurrentRow();
-            renderBoard();
             document.getElementById('adminNameDisplay').textContent = adminName || 'مدیر';
             
             logAccess('✏️ بروزرسانی تخته', adminName);
@@ -1640,7 +1647,6 @@
                 row.note = '';
                 row.status = 'pending';
                 await updateServer();
-                renderBoard();
                 loadRowData(deptId, false);
                 logAccess('🗑️ پاک کردن ردیف', adminName);
                 alert('🗑️ ردیف پاک شد!');
@@ -1695,10 +1701,10 @@
         }
 
         // ============================================
-        // بارگذاری اولیه + بازیابی لاگین + Polling
+        // مقداردهی اولیه سیستم با Listener فایربیس
         // ============================================
 
-        async function init() {
+        function init() {
             // پیش‌فرض: نمایش بخش ارسال پیام برای کاربران عادی
             toggleMessageSection(true);
             
@@ -1709,65 +1715,35 @@
                 logAccess('🔄 بازیابی نشست', adminName);
             }
 
-            // فراخوانی داده‌ها از سرور آنلاین
-            const serverData = await loadFromServer();
-            if (serverData) {
-                boardData = serverData.boardData || [];
-                messages = serverData.messages || [];
-            } else {
-                boardData = [];
-                messages = [];
-            }
-
-            // در صورتی که دیتابیس خالی است، مقادیر اولیه ساخته و آپلود شوند
-            if (boardData.length === 0) {
-                boardData = departments.map(dept => ({
-                    deptId: dept.id,
-                    deptName: dept.name,
-                    pharmacist: '',
-                    deliverer: '',
-                    note: '',
-                    status: 'pending'
-                }));
-                // داده های پیش‌فرض نمایشی
-                boardData[0].pharmacist = 'دکتر رضایی';
-                boardData[0].deliverer = 'علی محمدی';
-                boardData[0].note = 'آتروپین تموم شد';
-                boardData[0].status = 'ready';
-                boardData[1].pharmacist = 'دکتر کریمی';
-                boardData[1].deliverer = 'حسن حسینی';
-                boardData[1].note = 'نیاز به آمپی‌سیلین';
-                boardData[1].status = 'inprogress';
-                boardData[3].pharmacist = 'دکتر کریمی';
-                boardData[3].deliverer = 'سارا احمدی';
-                boardData[3].note = 'شربت کمه';
-                boardData[3].status = 'ready';
+            // فراخوانی لحظه‌ای و زنده از فایربیس (بدون نیاز به تایمر)
+            dbRef.on('value', async (snapshot) => {
+                const serverData = snapshot.val();
                 
-                await updateServer();
-            }
-
-            populateDeptSelect();
-            renderBoard();
-            await renderMessages();
-            
-            // شروع نظارت بر پیام‌ها و تغییرات تخته از روی سرور هر 5 ثانیه
-            setInterval(async () => {
-                const updatedData = await loadFromServer();
-                if (updatedData) {
+                if (serverData) {
                     const oldCount = messages.length;
                     
-                    boardData = updatedData.boardData || boardData;
-                    messages = updatedData.messages || messages;
+                    boardData = serverData.boardData || [];
+                    const newMessages = serverData.messages || [];
                     
-                    if (isAdmin && messages.length > oldCount) {
-                        const newMsg = messages[messages.length - 1];
+                    // بررسی برای نمایش نوتیفیکیشن
+                    if (isAdmin && newMessages.length > oldCount) {
+                        const newMsg = newMessages[newMessages.length - 1];
                         showNotification(newMsg.dept, newMsg.text);
                     }
                     
-                    await renderMessages();
-                    renderBoard();
+                    messages = newMessages;
+                } else {
+                    // اگر دیتابیس در فایربیس خالی بود، ساختار اولیه آپلود می‌شود
+                    boardData = generateDefaultBoard();
+                    messages = [];
+                    await updateServer();
                 }
-            }, 5000);
+
+                populateDeptSelect();
+                renderBoard();
+                await renderMessages();
+                updateLastTimeDisplay();
+            });
         }
 
         init();
