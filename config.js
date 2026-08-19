@@ -4,7 +4,7 @@
 
 const CONFIG = {
    
-    ADMIN_PASSWORD_HASH: '793506d8e4f23dd80656cbc1dbd72d189795c59199e230fbd60c8a011a04ab38',
+    ADMIN_PASSWORD_HASH: '3300ca67e0e7b51506f878aa36c6ea51100830158f3236b69c57805792d7dff5',
     
     // سایر تنظیمات امنیتی
     ADMIN_TITLE: 'مدیر داروخانه',
