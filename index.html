@@ -516,7 +516,7 @@
     </div>
 
     <!-- ==========================================
-    JavaScript - کدهای اصلی (به‌روز شده)
+    JavaScript - کدهای اصلی (به‌روز شده با ذخیره بخش)
     ========================================== -->
     <script>
         // ============================================
@@ -776,6 +776,27 @@
             document.getElementById('lastUpdateTime').textContent = timeStr;
         }
 
+        // ============================================
+        // ذخیره بخش انتخاب شده در localStorage
+        // ============================================
+
+        function saveSelectedDept(deptId) {
+            localStorage.setItem('selectedDeptId', deptId);
+            currentDeptId = deptId;
+        }
+
+        function getSelectedDept() {
+            const saved = localStorage.getItem('selectedDeptId');
+            if (saved) {
+                const id = parseInt(saved);
+                // بررسی اینکه ID معتبر هست
+                if (departments.some(d => d.id === id)) {
+                    return id;
+                }
+            }
+            return 1; // پیش‌فرض: اورژانس
+        }
+
         // ===== پر کردن لیست بخش‌ها در پنل مدیریت =====
         function populateDeptSelect() {
             const select = document.getElementById('editDept');
@@ -786,13 +807,16 @@
                 option.textContent = dept.icon + ' ' + dept.name;
                 select.appendChild(option);
             });
-            select.value = 1;
-            currentDeptId = 1;
-            loadRowData(1);
+            
+            // بازیابی آخرین بخش انتخاب شده
+            const lastDeptId = getSelectedDept();
+            select.value = lastDeptId;
+            currentDeptId = lastDeptId;
+            loadRowData(lastDeptId);
         }
 
         // ============================================
-        // ذخیره‌سازی خودکار هنگام تایپ (جدید!)
+        // ذخیره‌سازی خودکار هنگام تایپ
         // ============================================
 
         function markChanged(fieldId) {
@@ -801,12 +825,10 @@
                 field.classList.add('changed');
             }
             
-            // نمایش indicator ذخیره‌سازی
             const indicator = document.getElementById('autoSaveIndicator');
             indicator.textContent = '⏳ در حال ذخیره...';
             indicator.className = 'auto-save-indicator show';
             
-            // تاخیر برای ذخیره خودکار (هر ۱ ثانیه بعد از آخرین تایپ)
             clearTimeout(autoSaveTimer);
             autoSaveTimer = setTimeout(() => {
                 autoSaveCurrentRow();
@@ -832,22 +854,18 @@
                 saveData();
                 renderBoard();
                 
-                // نمایش indicator ذخیره شد
                 const indicator = document.getElementById('autoSaveIndicator');
                 indicator.textContent = '✅ ذخیره شد';
                 indicator.className = 'auto-save-indicator show';
                 
-                // پاک کردن کلاس changed از فیلدها
                 document.querySelectorAll('.changed').forEach(el => {
                     el.classList.remove('changed');
                 });
                 
-                // مخفی کردن indicator بعد از ۲ ثانیه
                 setTimeout(() => {
                     indicator.className = 'auto-save-indicator';
                 }, 2000);
                 
-                // ریست تایمر نشست
                 startSessionTimer();
             }
         }
@@ -877,12 +895,13 @@
                 document.getElementById('editStatus').value = row.status || 'pending';
                 currentDeptId = deptId;
                 
-                // پاک کردن کلاس changed
+                // ذخیره بخش انتخاب شده
+                saveSelectedDept(deptId);
+                
                 document.querySelectorAll('.changed').forEach(el => {
                     el.classList.remove('changed');
                 });
                 
-                // مخفی کردن indicator
                 document.getElementById('autoSaveIndicator').className = 'auto-save-indicator';
             }
         }
@@ -891,7 +910,8 @@
         document.addEventListener('DOMContentLoaded', function() {
             const select = document.getElementById('editDept');
             select.addEventListener('change', function() {
-                loadRowData(this.value);
+                const newDeptId = parseInt(this.value);
+                loadRowData(newDeptId);
             });
         });
 
@@ -902,10 +922,7 @@
                 return;
             }
 
-            // اول ذخیره خودکار
             autoSaveCurrentRow();
-            
-            // بروزرسانی نمایش
             renderBoard();
             document.getElementById('adminNameDisplay').textContent = adminName || 'مدیر';
             
