@@ -12,10 +12,14 @@ const CONFIG = {
     MAX_LOGIN_ATTEMPTS: 5, // حداکثر تلاش برای ورود
     LOCKOUT_DURATION: 5, // دقیقه قفل شدن بعد از تلاش‌های ناموفق
 
-    // ===== تنظیمات JSONBin =====
-    // کلید API که از JSONBin گرفتی
-    JSONBIN_API_KEY: '$2a$10$KMz.raZb1kA3iGwSTC370e8BkdKgVMsu.ACaMaQdbQc83.ulLPqcu',
-    
-    // شناسه Bin که از JSONBin گرفتی
-    JSONBIN_BIN_ID: '6a860bd6da38895dfef883b2'
+    // ===== تنظیمات فایربیس (Firebase Realtime Database) =====
+    firebaseConfig: {
+        apiKey: "AIzaSyBBrdeSQOpTVCUWXXmibAvlkDZfXVNlNF8",
+        authDomain: "pharmacy-board-e264f.firebaseapp.com",
+        databaseURL: "https://pharmacy-board-e264f-default-rtdb.firebaseio.com",
+        projectId: "pharmacy-board-e264f",
+        storageBucket: "pharmacy-board-e264f.firebasestorage.app",
+        messagingSenderId: "579675769857",
+        appId: "1:579675769857:web:3bdb5c333bb401ee860400"
+    }
 };
