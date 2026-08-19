@@ -173,7 +173,7 @@
         }
 
         /* ==========================================
-           کارت ارسال پیام
+           کارت ارسال پیام (فقط برای کاربران عادی)
            ========================================== */
         .message-section {
             background: linear-gradient(135deg, #f8f9fb 0%, #eef1f5 100%);
@@ -183,6 +183,10 @@
             margin-bottom: 25px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
             transition: all 0.3s ease;
+        }
+
+        .message-section.hidden {
+            display: none;
         }
 
         .message-section:hover {
@@ -945,9 +949,9 @@
         </div>
 
         <!-- ==========================================
-        بخش ارسال پیام از طرف بخش‌ها
+        بخش ارسال پیام از طرف بخش‌ها (فقط کاربران عادی)
         ========================================== -->
-        <div class="message-section">
+        <div class="message-section" id="messageSection">
             <h3><i class="fas fa-paper-plane"></i> ارسال پیام به داروخانه</h3>
             <div class="message-row">
                 <select id="msgDepartment">
@@ -1069,7 +1073,7 @@
     </div>
 
     <!-- ==========================================
-    JAVASCRIPT - نسخه نهایی با رفع مشکلات
+    JAVASCRIPT - نسخه نهایی
     ========================================== -->
     <script>
         // ============================================
@@ -1139,15 +1143,13 @@
             const loginTime = localStorage.getItem('loginTime');
             
             if (saved === 'true' && savedName) {
-                // بررسی زمان لاگین (حداکثر ۸ ساعت)
                 if (loginTime) {
                     const elapsed = Date.now() - parseInt(loginTime);
-                    if (elapsed < 8 * 60 * 60 * 1000) { // ۸ ساعت
+                    if (elapsed < 8 * 60 * 60 * 1000) {
                         isAdmin = true;
                         adminName = savedName;
                         return true;
                     } else {
-                        // منقضی شده
                         localStorage.removeItem('isAdmin');
                         localStorage.removeItem('adminName');
                         localStorage.removeItem('loginTime');
@@ -1155,6 +1157,19 @@
                 }
             }
             return false;
+        }
+
+        // ============================================
+        // مدیریت نمایش بخش ارسال پیام
+        // ============================================
+
+        function toggleMessageSection(show) {
+            const section = document.getElementById('messageSection');
+            if (show) {
+                section.classList.remove('hidden');
+            } else {
+                section.classList.add('hidden');
+            }
         }
 
         // ============================================
@@ -1168,7 +1183,6 @@
                 const oldCount = messages.length;
                 messages = newMessages;
                 
-                // بررسی پیام جدید
                 if (isAdmin && newMessages.length > oldCount) {
                     const newMsg = newMessages[newMessages.length - 1];
                     showNotification(newMsg.dept, newMsg.text);
@@ -1190,9 +1204,8 @@
             document.getElementById('notifText').textContent = text;
             toast.style.display = 'flex';
             
-            // پخش صدا (اختیاری)
             try {
-                const audio = new Audio('data:audio/wav;base64,UklGRnoAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoAAACBhYqFhYWFiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg=');
+                const audio = new Audio('data:audio/wav;base64,UklGRnoAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoAAACBhYqFhYWFiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg=');
                 audio.play().catch(() => {});
             } catch(e) {}
             
@@ -1263,7 +1276,6 @@
             list.innerHTML = html;
             count.textContent = unreadCount > 0 ? `${unreadCount} جدید` : messages.length;
             
-            // اگر مدیر هست، پیام‌ها را خوانده شده علامت بزن
             if (isAdmin) {
                 let changed = false;
                 messages.forEach(msg => {
@@ -1332,9 +1344,7 @@
                 adminName = name.trim();
                 loginAttempts = 0;
                 
-                // ذخیره وضعیت لاگین
                 saveLoginState();
-                
                 showAdminPanel(true);
                 startSessionTimer();
                 logAccess('✅ ورود موفق', adminName);
@@ -1353,7 +1363,6 @@
             isAdmin = false;
             adminName = '';
             
-            // پاک کردن وضعیت لاگین
             localStorage.removeItem('isAdmin');
             localStorage.removeItem('adminName');
             localStorage.removeItem('loginTime');
@@ -1375,6 +1384,9 @@
                 document.getElementById('loginBtn').style.display = 'none';
                 document.getElementById('logoutBtn').style.display = 'inline-block';
                 document.getElementById('logsBtn').style.display = 'inline-block';
+                
+                // مخفی کردن بخش ارسال پیام برای مدیر
+                toggleMessageSection(false);
             } else {
                 document.getElementById('adminPanel').style.display = 'none';
                 document.getElementById('messagesPanel').style.display = 'none';
@@ -1383,6 +1395,9 @@
                 document.getElementById('loginBtn').style.display = 'inline-block';
                 document.getElementById('logoutBtn').style.display = 'none';
                 document.getElementById('logsBtn').style.display = 'none';
+                
+                // نمایش بخش ارسال پیام برای کاربران عادی
+                toggleMessageSection(true);
             }
         }
 
@@ -1709,6 +1724,9 @@
             loadData();
             loadMessages();
             renderBoard();
+            
+            // پیش‌فرض: نمایش بخش ارسال پیام برای کاربران عادی
+            toggleMessageSection(true);
             
             // بازیابی وضعیت لاگین
             if (restoreLoginState()) {
