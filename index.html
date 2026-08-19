@@ -5,13 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🏥 تخته سیاه داروخانه مرکزی</title>
     
-    <!-- ===== لینک فایل تنظیمات امن ===== -->
     <script src="config.js"></script>
     
     <style>
-        /* ==========================================
-           CSS - استایل‌های تخته سیاه
-           ========================================== */
         * {
             margin: 0;
             padding: 0;
@@ -130,7 +126,155 @@
             background: #6c3483;
         }
 
-        /* ===== پنل مدیریت ===== */
+        /* ===== بخش ارسال پیام بخش‌ها ===== */
+        .message-section {
+            background: #eaf2f8;
+            border: 2px solid #2e86c1;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .message-section h3 {
+            color: #1a5276;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .message-section .message-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .message-section .message-row select,
+        .message-section .message-row input {
+            padding: 10px 14px;
+            border: 2px solid #d5dbdb;
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .message-section .message-row select:focus,
+        .message-section .message-row input:focus {
+            border-color: #2e86c1;
+        }
+
+        .message-section .message-row select {
+            flex: 0 0 150px;
+        }
+
+        .message-section .message-row input[type="text"] {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .message-section .message-row button {
+            padding: 10px 25px;
+            background: #2e86c1;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .message-section .message-row button:hover {
+            background: #1a5276;
+        }
+
+        .message-section .message-row .success-msg {
+            color: #27ae60;
+            font-size: 14px;
+            display: none;
+        }
+
+        /* ===== نمایش پیام‌ها برای مدیر ===== */
+        .messages-panel {
+            display: none;
+            background: #fef9e7;
+            border: 2px solid #f39c12;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .messages-panel h3 {
+            color: #b7950b;
+            margin-bottom: 15px;
+            font-size: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .messages-panel .msg-count {
+            background: #e74c3c;
+            color: white;
+            padding: 2px 12px;
+            border-radius: 30px;
+            font-size: 13px;
+        }
+
+        .messages-panel .msg-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .messages-panel .msg-item {
+            background: white;
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            border-right: 4px solid #2e86c1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .messages-panel .msg-item .msg-dept {
+            font-weight: bold;
+            color: #1a5276;
+            font-size: 14px;
+        }
+
+        .messages-panel .msg-item .msg-text {
+            flex: 1;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+
+        .messages-panel .msg-item .msg-time {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .messages-panel .msg-item .msg-delete {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .messages-panel .msg-item .msg-delete:hover {
+            background: #c0392b;
+        }
+
+        .messages-panel .no-msg {
+            color: #7f8c8d;
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* ===== پنل مدیریت تخته ===== */
         .admin-panel {
             display: none;
             background: #fef9e7;
@@ -224,7 +368,21 @@
             display: inline-block;
         }
 
-        /* ===== تخته سیاه (جدول) ===== */
+        .security-badge {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 12px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        .security-badge .lock-icon {
+            color: #f1c40f;
+        }
+
+        /* ===== تخته سیاه ===== */
         .board-section {
             overflow-x: auto;
             margin-top: 10px;
@@ -352,22 +510,6 @@
             font-size: 16px;
         }
 
-        /* ===== پیام هشدار امنیتی ===== */
-        .security-badge {
-            background: #2c3e50;
-            color: #ecf0f1;
-            padding: 8px 16px;
-            border-radius: 30px;
-            font-size: 12px;
-            display: inline-block;
-            margin-top: 10px;
-        }
-
-        .security-badge .lock-icon {
-            color: #f1c40f;
-        }
-
-        /* ===== ریسپانسیو ===== */
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
@@ -394,6 +536,18 @@
             }
             .header .info {
                 text-align: right;
+            }
+            .message-section .message-row {
+                flex-direction: column;
+            }
+            .message-section .message-row select,
+            .message-section .message-row input {
+                width: 100%;
+                flex: none;
+            }
+            .messages-panel .msg-item {
+                flex-direction: column;
+                align-items: stretch;
             }
         }
 
@@ -434,15 +588,60 @@
             </div>
         </div>
 
-        <!-- ===== پنل مدیریت ===== -->
+        <!-- ==========================================
+        بخش ارسال پیام از طرف بخش‌ها (همه می‌تونن ببینن)
+        ========================================== -->
+        <div class="message-section">
+            <h3>📨 ارسال پیام به داروخانه</h3>
+            <div class="message-row">
+                <select id="msgDepartment">
+                    <option value="اورژانس">🚑 اورژانس</option>
+                    <option value="CCU">❤️ CCU</option>
+                    <option value="ICU">🫁 ICU</option>
+                    <option value="اطفال">👶 اطفال</option>
+                    <option value="داخلی">🛏️ داخلی</option>
+                    <option value="جراحی">🔪 جراحی</option>
+                    <option value="ارتوپدی A">🦴 ارتوپدی A</option>
+                    <option value="ارتوپدی B">🦴 ارتوپدی B</option>
+                    <option value="گوش و حلق">👂 گوش و حلق</option>
+                    <option value="چشم پزشکی">👁️ چشم پزشکی</option>
+                    <option value="زنان و زایمان">👩‍⚕️ زنان و زایمان</option>
+                    <option value="اورولوژی">🧬 اورولوژی</option>
+                    <option value="نورولوژی">🧠 نورولوژی</option>
+                    <option value="روانپزشکی">🧘 روانپزشکی</option>
+                    <option value="فیزیوتراپی">💪 فیزیوتراپی</option>
+                </select>
+                <input type="text" id="msgInput" placeholder="متن پیام خود را بنویسید..." onkeypress="if(event.key==='Enter') sendMessage()">
+                <button onclick="sendMessage()">📤 ارسال پیام</button>
+                <span class="success-msg" id="msgSuccess">✅ پیام شما با موفقیت ارسال شد!</span>
+            </div>
+            <div style="margin-top:8px; font-size:12px; color:#7f8c8d;">
+                💬 پیام شما توسط مدیر داروخانه مشاهده و پاسخ داده می‌شود.
+            </div>
+        </div>
+
+        <!-- ==========================================
+        نمایش پیام‌های بخش‌ها (فقط مدیر)
+        ========================================== -->
+        <div class="messages-panel" id="messagesPanel">
+            <h3>
+                📩 پیام‌های بخش‌ها
+                <span class="msg-count" id="msgCount">۰</span>
+            </h3>
+            <div class="msg-list" id="msgList">
+                <div class="no-msg">📭 هیچ پیامی وجود ندارد</div>
+            </div>
+        </div>
+
+        <!-- ==========================================
+        پنل مدیریت تخته
+        ========================================== -->
         <div class="admin-panel" id="adminPanel">
             <h3>👨‍⚕️ پنل مدیریت تخته سیاه</h3>
             
             <div class="form-row">
                 <label>بخش:</label>
-                <select id="editDept">
-                    <!-- توسط جاوااسکریپت پر می‌شود -->
-                </select>
+                <select id="editDept"></select>
                 <span class="auto-save-indicator" id="autoSaveIndicator">✅ ذخیره شد</span>
             </div>
             
@@ -486,7 +685,9 @@
             </div>
         </div>
 
-        <!-- ===== تخته سیاه ===== -->
+        <!-- ==========================================
+        تخته سیاه
+        ========================================== -->
         <div class="board-section">
             <div class="status-legend">
                 <span class="legend-item"><span class="color-box" style="background:#fef9e7;border:1px solid #f9e79f;"></span> ⏳ در انتظار</span>
@@ -507,16 +708,14 @@
                             <th style="width:15%;">📊 وضعیت آماده‌سازی</th>
                         </tr>
                     </thead>
-                    <tbody id="boardTableBody">
-                        <!-- توسط جاوااسکریپت پر می‌شود -->
-                    </tbody>
+                    <tbody id="boardTableBody"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
     <!-- ==========================================
-    JavaScript - کدهای اصلی (به‌روز شده با ذخیره بخش)
+    JavaScript
     ========================================== -->
     <script>
         // ============================================
@@ -524,6 +723,7 @@
         // ============================================
         
         let boardData = [];
+        let messages = [];
         let isAdmin = false;
         let adminName = '';
         let loginAttempts = 0;
@@ -532,7 +732,6 @@
         let currentDeptId = 1;
         let autoSaveTimer = null;
 
-        // ===== لیست بخش‌ها (۱۵ بخش) =====
         const departments = [
             { id: 1, name: 'اورژانس', icon: '🚑' },
             { id: 2, name: 'CCU', icon: '❤️' },
@@ -552,7 +751,7 @@
         ];
 
         // ============================================
-        // توابع امنیتی - هش کردن رمز
+        // توابع امنیتی
         // ============================================
 
         async function hashPassword(password) {
@@ -564,23 +763,116 @@
         }
 
         // ============================================
-        // لاگین مدیر با هش + قفل شدن بعد از ۵ بار تلاش
+        // مدیریت پیام‌های بخش‌ها
+        // ============================================
+
+        function loadMessages() {
+            const saved = localStorage.getItem('departmentMessages');
+            if (saved) {
+                messages = JSON.parse(saved);
+            } else {
+                messages = [];
+            }
+            renderMessages();
+        }
+
+        function saveMessages() {
+            localStorage.setItem('departmentMessages', JSON.stringify(messages));
+            renderMessages();
+        }
+
+        function sendMessage() {
+            const dept = document.getElementById('msgDepartment').value;
+            const text = document.getElementById('msgInput').value.trim();
+            
+            if (!text) {
+                alert('لطفاً متن پیام را بنویسید!');
+                return;
+            }
+
+            const now = new Date();
+            const time = now.getHours().toString().padStart(2, '0') + ':' +
+                         now.getMinutes().toString().padStart(2, '0');
+
+            messages.push({
+                id: Date.now(),
+                dept: dept,
+                text: text,
+                time: time,
+                date: now.toLocaleDateString('fa-IR'),
+                isRead: false
+            });
+
+            document.getElementById('msgInput').value = '';
+            saveMessages();
+
+            // نمایش پیام موفقیت
+            const success = document.getElementById('msgSuccess');
+            success.style.display = 'inline-block';
+            setTimeout(() => {
+                success.style.display = 'none';
+            }, 3000);
+        }
+
+        function renderMessages() {
+            const list = document.getElementById('msgList');
+            const count = document.getElementById('msgCount');
+            
+            if (messages.length === 0) {
+                list.innerHTML = '<div class="no-msg">📭 هیچ پیامی وجود ندارد</div>';
+                count.textContent = '۰';
+                return;
+            }
+
+            // مرتب‌سازی بر اساس جدیدترین
+            const sorted = [...messages].reverse();
+            
+            let html = '';
+            sorted.forEach(msg => {
+                const isRead = msg.isRead ? '' : ' style="border-right-color: #e74c3c;"';
+                html += `
+                    <div class="msg-item"${isRead}>
+                        <span class="msg-dept">🏥 ${msg.dept}</span>
+                        <span class="msg-text">${msg.text}</span>
+                        <span class="msg-time">🕐 ${msg.time} - ${msg.date}</span>
+                        ${isAdmin ? `<button class="msg-delete" onclick="deleteMessage(${msg.id})">🗑️</button>` : ''}
+                    </div>
+                `;
+            });
+
+            list.innerHTML = html;
+            count.textContent = messages.length;
+        }
+
+        function deleteMessage(id) {
+            if (!isAdmin) {
+                alert('⚠️ فقط مدیر می‌تواند پیام را حذف کند!');
+                return;
+            }
+            if (!confirm('آیا از حذف این پیام مطمئن هستید؟')) return;
+            
+            messages = messages.filter(msg => msg.id !== id);
+            saveMessages();
+            logAccess('🗑️ حذف پیام', adminName);
+        }
+
+        // ============================================
+        // لاگین مدیر
         // ============================================
 
         async function adminLogin() {
             if (isLocked) {
-                alert('🔒 به دلیل تلاش‌های ناموفق، ورود موقتاً قفل شده است. لطفاً چند دقیقه بعد تلاش کنید.');
+                alert('🔒 به دلیل تلاش‌های ناموفق، ورود موقتاً قفل شده است.');
                 return;
             }
 
             if (loginAttempts >= CONFIG.MAX_LOGIN_ATTEMPTS) {
                 isLocked = true;
                 alert(`🔒 به دلیل ${CONFIG.MAX_LOGIN_ATTEMPTS} بار تلاش ناموفق، ورود به مدت ${CONFIG.LOCKOUT_DURATION} دقیقه قفل شد!`);
-                
                 setTimeout(() => {
                     isLocked = false;
                     loginAttempts = 0;
-                    alert('🔓 قفل ورود باز شد. می‌توانید دوباره تلاش کنید.');
+                    alert('🔓 قفل ورود باز شد.');
                 }, CONFIG.LOCKOUT_DURATION * 60 * 1000);
                 return;
             }
@@ -607,6 +899,7 @@
                 loginAttempts = 0;
                 
                 document.getElementById('adminPanel').style.display = 'block';
+                document.getElementById('messagesPanel').style.display = 'block';
                 document.getElementById('userStatus').textContent = '👨‍⚕️ مدیر داروخانه';
                 document.getElementById('adminNameDisplay').textContent = adminName;
                 document.getElementById('loginBtn').style.display = 'none';
@@ -616,6 +909,7 @@
                 startSessionTimer();
                 logAccess('✅ ورود موفق', adminName);
                 renderBoard();
+                renderMessages();
                 alert(`✅ به پنل مدیریت خوش آمدید آقا/خانم ${adminName}!`);
             } else {
                 loginAttempts++;
@@ -625,14 +919,11 @@
             }
         }
 
-        // ============================================
-        // خروج از حساب
-        // ============================================
-
         function adminLogout() {
             isAdmin = false;
             adminName = '';
             document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('messagesPanel').style.display = 'none';
             document.getElementById('userStatus').textContent = '👤 کاربر عادی';
             document.getElementById('adminNameDisplay').textContent = '─';
             document.getElementById('loginBtn').style.display = 'inline-block';
@@ -641,13 +932,10 @@
             
             clearTimeout(sessionTimer);
             renderBoard();
+            renderMessages();
             logAccess('🚪 خروج', adminName || 'کاربر');
             alert('🚪 از پنل مدیریت خارج شدید');
         }
-
-        // ============================================
-        // تایمر نشست (خروج خودکار بعد از بی‌حرکتی)
-        // ============================================
 
         function startSessionTimer() {
             clearTimeout(sessionTimer);
@@ -659,18 +947,12 @@
             }, CONFIG.SESSION_TIMEOUT * 60 * 1000);
         }
 
-        // ============================================
-        // ثبت لاگ فعالیت‌ها
-        // ============================================
-
         function logAccess(action, username) {
             const now = new Date();
             const timeStr = now.getHours().toString().padStart(2, '0') + ':' +
                             now.getMinutes().toString().padStart(2, '0') + ':' +
                             now.getSeconds().toString().padStart(2, '0');
             const dateStr = now.toLocaleDateString('fa-IR');
-            
-            console.log(`[${dateStr} ${timeStr}] ${action} - کاربر: ${username || 'ناشناس'}`);
             
             const logs = JSON.parse(localStorage.getItem('loginLogs') || '[]');
             logs.push({
@@ -681,10 +963,6 @@
             if (logs.length > 100) logs.shift();
             localStorage.setItem('loginLogs', JSON.stringify(logs));
         }
-
-        // ============================================
-        // نمایش لاگ‌ها (فقط برای مدیر)
-        // ============================================
 
         function showLogs() {
             if (!isAdmin) {
@@ -728,40 +1006,32 @@
                     note: '',
                     status: 'pending'
                 }));
-                // دیتای نمونه
                 boardData[0].pharmacist = 'دکتر رضایی';
                 boardData[0].deliverer = 'علی محمدی';
                 boardData[0].note = 'آتروپین تموم شد';
                 boardData[0].status = 'ready';
-
                 boardData[1].pharmacist = 'دکتر کریمی';
                 boardData[1].deliverer = 'حسن حسینی';
                 boardData[1].note = 'نیاز به آمپی‌سیلین';
                 boardData[1].status = 'inprogress';
-
                 boardData[3].pharmacist = 'دکتر کریمی';
                 boardData[3].deliverer = 'سارا احمدی';
                 boardData[3].note = 'شربت کمه';
                 boardData[3].status = 'ready';
-
                 boardData[5].pharmacist = 'دکتر رضایی';
                 boardData[5].deliverer = 'حسن حسینی';
                 boardData[5].note = 'مسکن برای بعد عمل';
                 boardData[5].status = 'inprogress';
-
                 boardData[6].pharmacist = 'دکتر کریمی';
                 boardData[6].deliverer = 'علی محمدی';
                 boardData[6].status = 'ready';
-
                 boardData[8].pharmacist = 'دکتر رضایی';
                 boardData[8].deliverer = 'سارا احمدی';
                 boardData[8].status = 'inprogress';
-
                 boardData[9].pharmacist = 'دکتر کریمی';
                 boardData[9].deliverer = 'حسن حسینی';
                 boardData[9].note = 'قطره چشم کمه';
                 boardData[9].status = 'inprogress';
-
                 saveData();
             }
             populateDeptSelect();
@@ -776,10 +1046,6 @@
             document.getElementById('lastUpdateTime').textContent = timeStr;
         }
 
-        // ============================================
-        // ذخیره بخش انتخاب شده در localStorage
-        // ============================================
-
         function saveSelectedDept(deptId) {
             localStorage.setItem('selectedDeptId', deptId);
             currentDeptId = deptId;
@@ -789,15 +1055,13 @@
             const saved = localStorage.getItem('selectedDeptId');
             if (saved) {
                 const id = parseInt(saved);
-                // بررسی اینکه ID معتبر هست
                 if (departments.some(d => d.id === id)) {
                     return id;
                 }
             }
-            return 1; // پیش‌فرض: اورژانس
+            return 1;
         }
 
-        // ===== پر کردن لیست بخش‌ها در پنل مدیریت =====
         function populateDeptSelect() {
             const select = document.getElementById('editDept');
             select.innerHTML = '';
@@ -808,16 +1072,11 @@
                 select.appendChild(option);
             });
             
-            // بازیابی آخرین بخش انتخاب شده
             const lastDeptId = getSelectedDept();
             select.value = lastDeptId;
             currentDeptId = lastDeptId;
             loadRowData(lastDeptId);
         }
-
-        // ============================================
-        // ذخیره‌سازی خودکار هنگام تایپ
-        // ============================================
 
         function markChanged(fieldId) {
             const field = document.getElementById(fieldId);
@@ -835,7 +1094,6 @@
             }, 1000);
         }
 
-        // ===== ذخیره خودکار ردیف فعلی =====
         function autoSaveCurrentRow() {
             if (!isAdmin) return;
             
@@ -870,7 +1128,6 @@
             }
         }
 
-        // ===== ذخیره دستی ردیف فعلی =====
         function saveCurrentRow() {
             if (!isAdmin) {
                 alert('⚠️ فقط مدیر می‌تواند ذخیره کند!');
@@ -880,9 +1137,7 @@
             alert('💾 اطلاعات بخش ذخیره شد!');
         }
 
-        // ===== بارگذاری داده‌های یک ردیف در پنل =====
         function loadRowData(deptId) {
-            // ابتدا ذخیره خودکار ردیف قبلی
             if (isAdmin) {
                 autoSaveCurrentRow();
             }
@@ -894,8 +1149,6 @@
                 document.getElementById('editNote').value = row.note || '';
                 document.getElementById('editStatus').value = row.status || 'pending';
                 currentDeptId = deptId;
-                
-                // ذخیره بخش انتخاب شده
                 saveSelectedDept(deptId);
                 
                 document.querySelectorAll('.changed').forEach(el => {
@@ -906,7 +1159,6 @@
             }
         }
 
-        // ===== انتخاب بخش در پنل =====
         document.addEventListener('DOMContentLoaded', function() {
             const select = document.getElementById('editDept');
             select.addEventListener('change', function() {
@@ -915,7 +1167,6 @@
             });
         });
 
-        // ===== بروزرسانی تخته (اعمال روی جدول اصلی) =====
         function updateBoard() {
             if (!isAdmin) {
                 alert('⚠️ فقط مدیر داروخانه می‌تواند تخته را بروزرسانی کند!');
@@ -931,7 +1182,6 @@
             startSessionTimer();
         }
 
-        // ===== پاک کردن ردیف =====
         function clearRow() {
             if (!isAdmin) {
                 alert('⚠️ فقط مدیر می‌تواند ردیف را پاک کند!');
@@ -956,7 +1206,6 @@
             }
         }
 
-        // ===== نمایش تخته =====
         function renderBoard() {
             const tbody = document.getElementById('boardTableBody');
             if (!boardData || boardData.length === 0) {
@@ -1008,26 +1257,28 @@
         // ============================================
 
         loadData();
+        loadMessages();
         renderBoard();
 
-        // ===== آپدیت خودکار هر ۵ ثانیه =====
         setInterval(() => {
             loadData();
+            loadMessages();
             renderBoard();
         }, 5000);
 
-        // ===== ریست لاگین در هر بار رفرش =====
         window.onload = function() {
             isAdmin = false;
             loginAttempts = 0;
             isLocked = false;
             document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('messagesPanel').style.display = 'none';
             document.getElementById('userStatus').textContent = '👤 کاربر عادی';
             document.getElementById('adminNameDisplay').textContent = '─';
             document.getElementById('loginBtn').style.display = 'inline-block';
             document.getElementById('logoutBtn').style.display = 'none';
             document.getElementById('logsBtn').style.display = 'none';
             loadData();
+            loadMessages();
             renderBoard();
         };
     </script>
