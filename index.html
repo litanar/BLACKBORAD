@@ -4,7 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🏥 تخته سیاه داروخانه مرکزی</title>
+    
+    <!-- ===== لینک فایل تنظیمات امن ===== -->
+    <script src="config.js"></script>
+    
     <style>
+        /* ==========================================
+           CSS - استایل‌های تخته سیاه
+           ========================================== */
         * {
             margin: 0;
             padding: 0;
@@ -107,6 +114,20 @@
 
         .header .admin-actions .logout-btn:hover {
             background: #c0392b;
+        }
+
+        .header .admin-actions .logs-btn {
+            background: #8e44ad;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .header .admin-actions .logs-btn:hover {
+            background: #6c3483;
         }
 
         /* ===== پنل مدیریت ===== */
@@ -313,6 +334,21 @@
             font-size: 16px;
         }
 
+        /* ===== پیام هشدار امنیتی ===== */
+        .security-badge {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 12px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        .security-badge .lock-icon {
+            color: #f1c40f;
+        }
+
         /* ===== ریسپانسیو ===== */
         @media (max-width: 768px) {
             .container {
@@ -376,6 +412,7 @@
                 <span class="status-badge" id="userStatus">👤 کاربر عادی</span>
                 <button class="login-btn" id="loginBtn" onclick="adminLogin()">🔑 ورود مدیر</button>
                 <button class="logout-btn" id="logoutBtn" onclick="adminLogout()" style="display:none;">🚪 خروج</button>
+                <button class="logs-btn" id="logsBtn" onclick="showLogs()" style="display:none;">📋 لاگ‌ها</button>
             </div>
         </div>
 
@@ -417,6 +454,9 @@
             <div style="margin-top:10px; font-size:13px; color:#7f8c8d;">
                 💡 تغییرات شما در لحظه روی تخته نمایش داده می‌شود.
             </div>
+            <div class="security-badge">
+                <span class="lock-icon">🔒</span> امنیت: رمز به صورت هش شده ذخیره می‌شود
+            </div>
         </div>
 
         <!-- ===== تخته سیاه ===== -->
@@ -448,10 +488,21 @@
         </div>
     </div>
 
-    <!-- ========================================= -->
-    <!-- جاوااسکریپت -->
-    <!-- ========================================= -->
+    <!-- ==========================================
+    JavaScript - کدهای اصلی
+    ========================================== -->
     <script>
+        // ============================================
+        // تنظیمات اولیه
+        // ============================================
+        
+        let boardData = [];
+        let isAdmin = false;
+        let adminName = '';
+        let loginAttempts = 0;
+        let sessionTimer = null;
+        let isLocked = false;
+
         // ===== لیست بخش‌ها (۱۵ بخش) =====
         const departments = [
             { id: 1, name: 'اورژانس', icon: '🚑' },
@@ -471,18 +522,191 @@
             { id: 15, name: 'فیزیوتراپی', icon: '💪' }
         ];
 
-        // ===== دیتای تخته =====
-        let boardData = [];
-        let isAdmin = false;
-        let adminName = '';
+        // ============================================
+        // توابع امنیتی - هش کردن رمز
+        // ============================================
 
-        // ===== بارگذاری از localStorage =====
+        async function hashPassword(password) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(password);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // ============================================
+        // لاگین مدیر با هش + قفل شدن بعد از ۵ بار تلاش
+        // ============================================
+
+        async function adminLogin() {
+            // بررسی قفل بودن
+            if (isLocked) {
+                alert('🔒 به دلیل تلاش‌های ناموفق، ورود موقتاً قفل شده است. لطفاً چند دقیقه بعد تلاش کنید.');
+                return;
+            }
+
+            // بررسی تعداد تلاش‌های ناموفق
+            if (loginAttempts >= CONFIG.MAX_LOGIN_ATTEMPTS) {
+                isLocked = true;
+                alert(`🔒 به دلیل ${CONFIG.MAX_LOGIN_ATTEMPTS} بار تلاش ناموفق، ورود به مدت ${CONFIG.LOCKOUT_DURATION} دقیقه قفل شد!`);
+                
+                // باز کردن قفل بعد از مدت زمان مشخص
+                setTimeout(() => {
+                    isLocked = false;
+                    loginAttempts = 0;
+                    alert('🔓 قفل ورود باز شد. می‌توانید دوباره تلاش کنید.');
+                }, CONFIG.LOCKOUT_DURATION * 60 * 1000);
+                return;
+            }
+
+            const name = prompt('👨‍⚕️ نام مدیر داروخانه را وارد کنید:');
+            if (!name || name.trim() === '') {
+                loginAttempts++;
+                return;
+            }
+
+            const pass = prompt('🔑 رمز مدیر را وارد کنید:');
+            if (!pass || pass.trim() === '') {
+                loginAttempts++;
+                const remaining = CONFIG.MAX_LOGIN_ATTEMPTS - loginAttempts;
+                alert(`❌ رمز نمی‌تواند خالی باشد! ${remaining} تلاش باقی مانده.`);
+                return;
+            }
+
+            // هش کردن رمز وارد شده
+            const hashedInput = await hashPassword(pass);
+            
+            // مقایسه با هش ذخیره شده در config.js
+            if (hashedInput === CONFIG.ADMIN_PASSWORD_HASH) {
+                // موفقیت
+                isAdmin = true;
+                adminName = name.trim();
+                loginAttempts = 0;
+                
+                // نمایش پنل مدیریت
+                document.getElementById('adminPanel').style.display = 'block';
+                document.getElementById('userStatus').textContent = '👨‍⚕️ مدیر داروخانه';
+                document.getElementById('adminNameDisplay').textContent = adminName;
+                document.getElementById('loginBtn').style.display = 'none';
+                document.getElementById('logoutBtn').style.display = 'inline-block';
+                document.getElementById('logsBtn').style.display = 'inline-block';
+                
+                // شروع تایمر نشست
+                startSessionTimer();
+                
+                // ثبت لاگ ورود موفق
+                logAccess('✅ ورود موفق', adminName);
+                
+                renderBoard();
+                alert(`✅ به پنل مدیریت خوش آمدید آقا/خانم ${adminName}!`);
+            } else {
+                // ناموفق
+                loginAttempts++;
+                const remaining = CONFIG.MAX_LOGIN_ATTEMPTS - loginAttempts;
+                alert(`❌ رمز اشتباه است! ${remaining} تلاش باقی مانده.`);
+                
+                // ثبت لاگ ورود ناموفق
+                logAccess('❌ ورود ناموفق', name || 'ناشناس');
+            }
+        }
+
+        // ============================================
+        // خروج از حساب
+        // ============================================
+
+        function adminLogout() {
+            isAdmin = false;
+            adminName = '';
+            document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('userStatus').textContent = '👤 کاربر عادی';
+            document.getElementById('adminNameDisplay').textContent = '─';
+            document.getElementById('loginBtn').style.display = 'inline-block';
+            document.getElementById('logoutBtn').style.display = 'none';
+            document.getElementById('logsBtn').style.display = 'none';
+            
+            clearTimeout(sessionTimer);
+            renderBoard();
+            
+            logAccess('🚪 خروج', adminName || 'کاربر');
+            alert('🚪 از پنل مدیریت خارج شدید');
+        }
+
+        // ============================================
+        // تایمر نشست (خروج خودکار بعد از بی‌حرکتی)
+        // ============================================
+
+        function startSessionTimer() {
+            clearTimeout(sessionTimer);
+            sessionTimer = setTimeout(() => {
+                if (isAdmin) {
+                    alert(`⏰ به دلیل ${CONFIG.SESSION_TIMEOUT} دقیقه بی‌حرکتی، از حساب خارج شدید.`);
+                    adminLogout();
+                }
+            }, CONFIG.SESSION_TIMEOUT * 60 * 1000);
+        }
+
+        // ============================================
+        // ثبت لاگ فعالیت‌ها
+        // ============================================
+
+        function logAccess(action, username) {
+            const now = new Date();
+            const timeStr = now.getHours().toString().padStart(2, '0') + ':' +
+                            now.getMinutes().toString().padStart(2, '0') + ':' +
+                            now.getSeconds().toString().padStart(2, '0');
+            const dateStr = now.toLocaleDateString('fa-IR');
+            
+            console.log(`[${dateStr} ${timeStr}] ${action} - کاربر: ${username || 'ناشناس'}`);
+            
+            const logs = JSON.parse(localStorage.getItem('loginLogs') || '[]');
+            logs.push({
+                time: `${dateStr} ${timeStr}`,
+                action: action,
+                user: username || 'ناشناس'
+            });
+            // فقط ۱۰۰ لاگ آخر رو نگه دار
+            if (logs.length > 100) logs.shift();
+            localStorage.setItem('loginLogs', JSON.stringify(logs));
+        }
+
+        // ============================================
+        // نمایش لاگ‌ها (فقط برای مدیر)
+        // ============================================
+
+        function showLogs() {
+            if (!isAdmin) {
+                alert('⚠️ فقط مدیر می‌تواند لاگ‌ها را ببیند!');
+                return;
+            }
+            
+            const logs = JSON.parse(localStorage.getItem('loginLogs') || '[]');
+            if (logs.length === 0) {
+                alert('📭 هیچ لاگی وجود ندارد.');
+                return;
+            }
+            
+            let logText = '📋 تاریخچه ورود و فعالیت‌ها:\n';
+            logText += '═'.repeat(40) + '\n\n';
+            
+            logs.slice(-30).forEach(log => {
+                logText += `🕐 ${log.time}\n`;
+                logText += `📌 ${log.action}\n`;
+                logText += `👤 ${log.user}\n`;
+                logText += '─'.repeat(30) + '\n';
+            });
+            
+            alert(logText);
+        }
+
+        // ============================================
+        // مدیریت داده‌های تخته
+        // ============================================
+
         function loadData() {
             const saved = localStorage.getItem('pharmacyBoardData');
             if (saved) {
                 boardData = JSON.parse(saved);
             } else {
-                // دیتای نمونه اولیه
                 boardData = departments.map(dept => ({
                     deptId: dept.id,
                     deptName: dept.name,
@@ -491,7 +715,7 @@
                     note: '',
                     status: 'pending'
                 }));
-                // اضافه کردن چند نمونه
+                // دیتای نمونه
                 boardData[0].pharmacist = 'دکتر رضایی';
                 boardData[0].deliverer = 'علی محمدی';
                 boardData[0].note = 'آتروپین تموم شد';
@@ -527,13 +751,11 @@
 
                 saveData();
             }
-            // پر کردن لیست بخش‌ها در پنل مدیریت
             populateDeptSelect();
         }
 
         function saveData() {
             localStorage.setItem('pharmacyBoardData', JSON.stringify(boardData));
-            // به‌روزرسانی زمان
             const now = new Date();
             const timeStr = now.getHours().toString().padStart(2, '0') + ':' +
                            now.getMinutes().toString().padStart(2, '0') + ':' +
@@ -551,7 +773,6 @@
                 option.textContent = dept.icon + ' ' + dept.name;
                 select.appendChild(option);
             });
-            // انتخاب اولین بخش
             select.value = 1;
             loadRowData(1);
         }
@@ -597,7 +818,12 @@
                 saveData();
                 renderBoard();
                 document.getElementById('adminNameDisplay').textContent = adminName || 'مدیر';
+                
+                logAccess('✏️ بروزرسانی تخته', adminName);
                 alert('✅ تخته با موفقیت بروزرسانی شد!');
+                
+                // ریست تایمر نشست
+                startSessionTimer();
             }
         }
 
@@ -620,7 +846,10 @@
                 saveData();
                 renderBoard();
                 loadRowData(deptId);
+                logAccess('🗑️ پاک کردن ردیف', adminName);
                 alert('🗑️ ردیف پاک شد!');
+                
+                startSessionTimer();
             }
         }
 
@@ -671,59 +900,30 @@
             tbody.innerHTML = html;
         }
 
-        // ===== لاگین مدیر =====
-        function adminLogin() {
-            const name = prompt('👨‍⚕️ نام مدیر داروخانه را وارد کنید:');
-            if (!name || name.trim() === '') return;
+        // ============================================
+        // بارگذاری اولیه
+        // ============================================
 
-            const pass = prompt('🔑 رمز مدیر را وارد کنید:');
-            if (pass === '1234') {
-                isAdmin = true;
-                adminName = name.trim();
-                document.getElementById('adminPanel').style.display = 'block';
-                document.getElementById('userStatus').textContent = '👨‍⚕️ مدیر داروخانه';
-                document.getElementById('adminNameDisplay').textContent = adminName;
-                document.getElementById('loginBtn').style.display = 'none';
-                document.getElementById('logoutBtn').style.display = 'inline-block';
-                renderBoard();
-                alert(`✅ به پنل مدیریت خوش آمدید آقا/خانم ${adminName}!`);
-            } else if (pass !== null) {
-                alert('❌ رمز اشتباه است!');
-            }
-        }
-
-        // ===== خروج مدیر =====
-        function adminLogout() {
-            isAdmin = false;
-            adminName = '';
-            document.getElementById('adminPanel').style.display = 'none';
-            document.getElementById('userStatus').textContent = '👤 کاربر عادی';
-            document.getElementById('adminNameDisplay').textContent = '─';
-            document.getElementById('loginBtn').style.display = 'inline-block';
-            document.getElementById('logoutBtn').style.display = 'none';
-            renderBoard();
-            alert('🚪 از پنل مدیریت خارج شدید');
-        }
-
-        // ===== بارگذاری اولیه =====
         loadData();
         renderBoard();
 
-        // ===== آپدیت خودکار هر ۵ ثانیه (برای هماهنگی بین کاربران) =====
+        // ===== آپدیت خودکار هر ۵ ثانیه =====
         setInterval(() => {
             loadData();
             renderBoard();
         }, 5000);
 
-        // ===== اگر صفحه رفرش شد، وضعیت لاگین ریست شود =====
+        // ===== ریست لاگین در هر بار رفرش =====
         window.onload = function() {
-            // اطمینان از اینکه لاگین ریست می‌شود
             isAdmin = false;
+            loginAttempts = 0;
+            isLocked = false;
             document.getElementById('adminPanel').style.display = 'none';
             document.getElementById('userStatus').textContent = '👤 کاربر عادی';
             document.getElementById('adminNameDisplay').textContent = '─';
             document.getElementById('loginBtn').style.display = 'inline-block';
             document.getElementById('logoutBtn').style.display = 'none';
+            document.getElementById('logsBtn').style.display = 'none';
             loadData();
             renderBoard();
         };
